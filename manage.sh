@@ -379,6 +379,14 @@ MCP_PORT=${mcp_port}
 ENVEOF
 
   log "配置文件已生成: .env"
+  echo ""
+  echo -e "${CYAN}━━━ 请保存以下凭据 ━━━${NC}"
+  echo -e "  ${YELLOW}API 鉴权 Token:${NC}  ${api_token}"
+  echo -e "  ${YELLOW}Studio 密码:${NC}     ${dash_pass}"
+  echo ""
+  warn "如果丢失以上凭据，可在 .env 文件中查看"
+  warn "  API Token:    查看 API_AUTH_TOKEN"
+  warn "  Studio 密码:  查看 DASHBOARD_PASSWORD"
 }
 
 # 显示访问地址
@@ -389,6 +397,9 @@ show_access_info() {
   kong_port=$(get_env_var KONG_HTTP_PORT 8001)
   mcp_port=$(get_env_var MCP_PORT 3002)
 
+  local api_token
+  api_token=$(get_env_var API_AUTH_TOKEN)
+
   echo ""
   echo -e "${CYAN}━━━ 访问地址 ━━━${NC}"
   info "应用:            http://localhost:${app_port}"
@@ -396,6 +407,10 @@ show_access_info() {
   info "MCP Server:      http://localhost:${mcp_port}/mcp"
   info "Supabase Studio: http://localhost:${nginx_port}/studio/"
   info "Supabase API:    http://localhost:${kong_port}"
+  echo ""
+  echo -e "${CYAN}━━━ API 鉴权 ━━━${NC}"
+  info "Token: ${api_token}"
+  info "丢失可在 .env 中查看 API_AUTH_TOKEN"
 }
 
 # ============================================================
