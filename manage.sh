@@ -265,6 +265,11 @@ generate_env_interactive() {
   fi
   echo ""
 
+  echo -e "${CYAN}🌐 外部访问地址${NC}"
+  local external_host
+  external_host=$(prompt_value "服务域名或IP（外部访问用）" "localhost")
+  echo ""
+
   echo -e "${CYAN}👤 Supabase Studio${NC}"
   local dash_user dash_pass
   dash_user=$(prompt_value "管理员用户名" "supabase")
@@ -296,9 +301,18 @@ generate_env_interactive() {
 
   # ── D. 派生值 ──
 
-  local site_url="http://localhost:${app_port}"
-  local api_external_url="http://localhost:${kong_http}"
-  local supabase_public_url="http://localhost:${kong_http}"
+  local site_url api_external_url supabase_public_url mcp_external_url
+  if [[ "$external_host" == "localhost" ]]; then
+    site_url="http://localhost:${app_port}"
+    api_external_url="http://localhost:${kong_http}"
+    supabase_public_url="http://localhost:${kong_http}"
+    mcp_external_url="http://localhost:${mcp_port}"
+  else
+    site_url="http://${external_host}:${nginx_port}"
+    api_external_url="http://${external_host}:${nginx_port}"
+    supabase_public_url="http://${external_host}:${nginx_port}"
+    mcp_external_url="http://${external_host}:${nginx_port}"
+  fi
 
   # ── 写入 .env ──
 
@@ -414,6 +428,12 @@ APP_PORT=${app_port}
 NGINX_PORT=${nginx_port}
 MCP_PORT=${mcp_port}
 DB_PORT=${db_port}
+
+############
+# MCP External URL (for skill file generation)
+############
+
+MCP_EXTERNAL_URL=${mcp_external_url}
 ENVEOF
 
   log "配置文件已生成: .env"
@@ -429,6 +449,21 @@ ENVEOF
   warn "如果丢失以上凭据，可在 .env 文件中查看:"
   warn "  API Token   → API_AUTH_TOKEN"
   warn "  Studio 密码 → DASHBOARD_PASSWORD"
+}
+
+# 从 MCP Server 拉取 skill.md
+generate_skill_file() {
+  local mcp_port
+  mcp_port=$(get_env_var MCP_PORT 3002)
+
+  if curl -sf "http://localhost:${mcp_port}/skill" -o skill.md 2>/dev/null; then
+    log "已生成 skill.md"
+    info "使用方法："
+    info "  mkdir -p .claude/skills/xiaohongshu-ops"
+    info "  cp skill.md .claude/skills/xiaohongshu-ops/SKILL.md"
+  else
+    warn "Skill 文件生成失败，可稍后访问 http://localhost:${mcp_port}/skill 获取"
+  fi
 }
 
 # 显示访问地址
@@ -508,6 +543,9 @@ cmd_install() {
   echo ""
   cmd_status
   show_access_info
+
+  # 9. 生成 skill 文件
+  generate_skill_file
 }
 
 # ============================================================
@@ -626,6 +664,9 @@ cmd_start() {
   echo ""
   cmd_status
   show_access_info
+
+  # 生成 skill 文件
+  generate_skill_file
 }
 
 # ============================================================

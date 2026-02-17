@@ -10,6 +10,7 @@ import { registerStatusTools } from "./tools/status.js";
 import { registerPublishTools } from "./tools/publish.js";
 import { registerImageTools } from "./tools/images.js";
 import { registerVersionTools } from "./tools/versions.js";
+import { getSkillMarkdown } from "./skill-template.js";
 
 const PORT = Number(process.env.MCP_PORT) || 3002;
 const HOST = process.env.MCP_HOST || "0.0.0.0";
@@ -39,6 +40,15 @@ async function main() {
     if (url.pathname === "/health") {
       res.writeHead(200, { "Content-Type": "application/json" });
       res.end(JSON.stringify({ status: "ok", name: "xiaohongshu-ops-mcp" }));
+      return;
+    }
+
+    // Skill file endpoint
+    if (url.pathname === "/skill") {
+      const mcpUrl = process.env.MCP_EXTERNAL_URL || `http://localhost:${PORT}`;
+      const markdown = getSkillMarkdown(mcpUrl);
+      res.writeHead(200, { "Content-Type": "text/markdown; charset=utf-8" });
+      res.end(markdown);
       return;
     }
 

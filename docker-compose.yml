@@ -279,6 +279,7 @@ services:
       XHS_API_AUTH_TOKEN: ${API_AUTH_TOKEN}
       MCP_PORT: 3002
       MCP_HOST: "0.0.0.0"
+      MCP_EXTERNAL_URL: ${MCP_EXTERNAL_URL:-http://localhost:3002}
     ports:
       - "${MCP_PORT:-3002}:3002"
 
