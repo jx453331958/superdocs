@@ -43,28 +43,39 @@ compose() {
   fi
 }
 
-# 迁移旧 named volume db-config 到本地目录
-migrate_db_config_volume() {
-  local volume_name="xiaohongshu-ops_db-config"
+# 确保 db config 目录有配置文件
+ensure_db_config() {
   local target_dir="volumes/db/config"
-
-  # 目标目录已有文件则跳过
-  if [[ -d "$target_dir" ]] && ls "$target_dir"/*.conf &>/dev/null 2>&1; then
-    return
-  fi
-
-  # 检查旧 named volume 是否存在
-  if ! docker volume inspect "$volume_name" &>/dev/null; then
-    return
-  fi
-
-  info "迁移 db-config 数据到本地目录..."
   mkdir -p "$target_dir"
-  docker run --rm \
-    -v "${volume_name}:/src" \
-    -v "$(pwd)/${target_dir}:/dst" \
-    alpine sh -c 'cp -a /src/. /dst/'
-  log "db-config 迁移完成"
+
+  # 已有配置文件则跳过
+  if ls "$target_dir"/*.conf &>/dev/null 2>&1; then
+    return
+  fi
+
+  # 优先从旧 named volume 迁移
+  local volume_name="xiaohongshu-ops_db-config"
+  if docker volume inspect "$volume_name" &>/dev/null; then
+    info "迁移 db-config 数据到本地目录..."
+    docker run --rm \
+      -v "${volume_name}:/src" \
+      -v "$(pwd)/${target_dir}:/dst" \
+      alpine sh -c 'cp -a /src/. /dst/'
+    log "db-config 迁移完成"
+    return
+  fi
+
+  # 全新部署：从 DB 镜像提取默认配置
+  local db_image
+  db_image=$(grep 'image:.*db:' docker-compose.yml | head -1 | awk '{print $2}')
+  if [[ -n "$db_image" ]]; then
+    info "初始化数据库配置..."
+    docker run --rm \
+      -v "$(pwd)/${target_dir}:/dst" \
+      "$db_image" \
+      sh -c 'cp -a /etc/postgresql-custom/. /dst/ 2>/dev/null || true'
+    log "数据库配置已初始化"
+  fi
 }
 
 # 从 .env 读取变量值
@@ -473,7 +484,7 @@ cmd_install() {
 
   # 3. 创建数据目录
   mkdir -p volumes/db/data volumes/db/config volumes/storage
-  migrate_db_config_volume
+  ensure_db_config
 
   # 4. 拉取镜像
   info "拉取镜像..."
@@ -584,7 +595,7 @@ cmd_init() {
 
   # 创建数据目录
   mkdir -p volumes/db/data volumes/db/config volumes/storage
-  migrate_db_config_volume
+  ensure_db_config
 
   log "初始化完成！"
   echo ""
