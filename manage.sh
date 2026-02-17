@@ -136,6 +136,47 @@ prompt_value() {
   echo "${input:-$default}"
 }
 
+# 检查端口是否空闲
+is_port_free() {
+  local port="$1"
+  if command -v ss &>/dev/null; then
+    ! ss -tlnH "sport = :${port}" 2>/dev/null | grep -q .
+  elif command -v netstat &>/dev/null; then
+    ! netstat -tlnp 2>/dev/null | grep -q ":${port} "
+  else
+    # fallback: 尝试连接
+    ! (echo >/dev/tcp/localhost/"$port") 2>/dev/null
+  fi
+}
+
+# 查找 N 个连续空闲高位端口（10000-60000）
+find_free_ports() {
+  local count="$1"
+  local max_attempts=100
+  local attempt=0
+
+  while [ $attempt -lt $max_attempts ]; do
+    local start=$((RANDOM % 50000 + 10000))
+    local all_free=true
+
+    for offset in $(seq 0 $((count - 1))); do
+      if ! is_port_free $((start + offset)); then
+        all_free=false
+        break
+      fi
+    done
+
+    if $all_free; then
+      echo "$start"
+      return 0
+    fi
+
+    attempt=$((attempt + 1))
+  done
+
+  return 1
+}
+
 # 交互式生成 .env 文件
 generate_env_interactive() {
   echo -e "${CYAN}━━━ 配置 xiaohongshu-ops ━━━${NC}"
@@ -152,11 +193,23 @@ generate_env_interactive() {
 
   echo -e "${CYAN}🔌 端口设置${NC}"
   local app_port nginx_port kong_http kong_https mcp_port
-  app_port=$(prompt_value "应用端口" "3001")
-  nginx_port=$(prompt_value "Nginx 端口" "8080")
-  kong_http=$(prompt_value "Kong HTTP 端口" "8001")
-  kong_https=$(prompt_value "Kong HTTPS 端口" "8444")
-  mcp_port=$(prompt_value "MCP Server 端口" "3002")
+  local port_start
+  if port_start=$(find_free_ports 5); then
+    app_port=$((port_start))
+    nginx_port=$((port_start + 1))
+    kong_http=$((port_start + 2))
+    kong_https=$((port_start + 3))
+    mcp_port=$((port_start + 4))
+    echo "  已自动分配连续端口 ${port_start}-$((port_start + 4)):"
+    echo "    应用:        ${app_port}"
+    echo "    Nginx:       ${nginx_port}"
+    echo "    Kong HTTP:   ${kong_http}"
+    echo "    Kong HTTPS:  ${kong_https}"
+    echo "    MCP Server:  ${mcp_port}"
+  else
+    warn "未能找到连续空闲端口，使用默认值"
+    app_port=3001; nginx_port=8080; kong_http=8001; kong_https=8444; mcp_port=3002
+  fi
   echo ""
 
   echo -e "${CYAN}👤 Supabase Studio${NC}"
