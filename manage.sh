@@ -96,10 +96,7 @@ cmd_start() {
   [[ ! -f .env ]] && cmd_init
 
   info "拉取镜像..."
-  compose pull --ignore-buildable
-
-  info "构建应用镜像..."
-  compose build app mcp
+  compose pull
 
   info "启动所有服务..."
   compose up -d
@@ -164,10 +161,10 @@ cmd_update() {
   info "拉取最新代码..."
   git pull origin main
 
-  info "重新构建应用和 MCP..."
-  compose build app mcp --no-cache
+  info "拉取最新镜像..."
+  compose pull app mcp
 
-  info "重启应用和 MCP（零停机）..."
+  info "重启应用和 MCP..."
   compose up -d --no-deps app mcp
 
   log "更新完成！"

@@ -278,9 +278,7 @@ services:
   # MCP Server
   mcp:
     container_name: xhs-ops-mcp
-    build:
-      context: ./mcp-server
-      dockerfile: Dockerfile
+    image: ghcr.io/jx453331958/xiaohongshu-ops/mcp:latest
     restart: unless-stopped
     depends_on:
       app:
@@ -296,9 +294,7 @@ services:
   # Next.js Application
   app:
     container_name: xhs-ops-app
-    build:
-      context: .
-      dockerfile: Dockerfile
+    image: ghcr.io/jx453331958/xiaohongshu-ops/app:latest
     restart: unless-stopped
     depends_on:
       kong:
