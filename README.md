@@ -32,36 +32,19 @@
    cd xiaohongshu-ops
    ```
 
-2. **配置环境变量**
+2. **一键安装**
    ```bash
-   cp .env.example .env
-   # 编辑 .env，至少修改以下内容：
-   # - POSTGRES_PASSWORD: 设置强密码
-   # - JWT_SECRET: 生成随机密钥（openssl rand -base64 32）
-   # - ANON_KEY & SERVICE_ROLE_KEY: 使用 https://supabase.com/docs/guides/self-hosting/docker#generate-api-keys
-   # - SUPABASE_PUBLIC_URL: 设置为你的域名（生产环境）
+   ./manage.sh install
+   # 按提示完成配置（品牌名称、端口等，回车使用默认值）
+   # 密钥自动生成，无需手动编辑 .env
    ```
 
-3. **启动服务**
-   ```bash
-   docker compose up -d
-   ```
+3. **访问应用**
+   - 应用首页：http://localhost:3001
+   - Supabase Studio：http://localhost:8080/studio/
+   - Supabase API：http://localhost:8001
 
-4. **初始化数据库**
-   ```bash
-   # 等待所有服务启动（约30秒）
-   docker compose logs -f db
-   
-   # 执行数据库迁移
-   # 方式1：通过 Supabase Studio (http://localhost/studio)
-   # 方式2：手动执行 SQL
-   docker compose exec db psql -U postgres -d postgres -f /docker-entrypoint-initdb.d/00_schema.sql
-   ```
-
-5. **访问应用**
-   - 应用首页：http://localhost
-   - Supabase Studio：http://localhost/studio
-   - API 文档：http://localhost/rest/v1
+如需重新配置，运行 `./manage.sh config`。
 
 ### 本地开发
 

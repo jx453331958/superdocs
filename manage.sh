@@ -113,27 +113,201 @@ check_env() {
   [[ ! -f .env ]] && return
 
   local warnings=0
-
-  if grep -q "^POSTGRES_PASSWORD=your-super-secret-and-long-postgres-password$" .env 2>/dev/null; then
-    warn "POSTGRES_PASSWORD 仍为默认值，请修改！"
-    warnings=$((warnings + 1))
-  fi
-  if grep -q "^JWT_SECRET=your-super-secret-jwt-token-with-at-least-32-characters-long$" .env 2>/dev/null; then
-    warn "JWT_SECRET 仍为默认值，请修改！"
-    warnings=$((warnings + 1))
-  fi
-  if grep -q "^API_AUTH_TOKEN=your-api-auth-token-here$" .env 2>/dev/null; then
-    warn "API_AUTH_TOKEN 仍为默认值，请修改！"
-    warnings=$((warnings + 1))
-  fi
-  if grep -q "^PG_META_CRYPTO_KEY=your-encryption-key-32-chars-min$" .env 2>/dev/null; then
-    warn "PG_META_CRYPTO_KEY 仍为默认值，请修改！"
-    warnings=$((warnings + 1))
-  fi
+  local key
+  for key in POSTGRES_PASSWORD JWT_SECRET API_AUTH_TOKEN PG_META_CRYPTO_KEY; do
+    local val
+    val=$(get_env_var "$key")
+    if [[ -z "$val" ]]; then
+      warn "${key} 为空，请运行 ./manage.sh config 重新配置"
+      warnings=$((warnings + 1))
+    fi
+  done
 
   if [ $warnings -gt 0 ]; then
-    warn "以上变量使用默认值，生产环境请务必修改 .env"
+    warn "以上变量缺失，服务可能无法正常启动"
   fi
+}
+
+# 交互式输入（带默认值）
+prompt_value() {
+  local prompt="$1" default="$2"
+  local input
+  read -rp "  ${prompt} [${default}]: " input
+  echo "${input:-$default}"
+}
+
+# 交互式生成 .env 文件
+generate_env_interactive() {
+  echo -e "${CYAN}━━━ 配置 xiaohongshu-ops ━━━${NC}"
+  echo ""
+
+  # ── A. 交互式提示 ──
+
+  echo -e "${CYAN}📌 品牌设置${NC}"
+  local app_name app_short app_subtitle
+  app_name=$(prompt_value "后台名称" "小红书运营")
+  app_short=$(prompt_value "侧栏缩写" "XHS")
+  app_subtitle=$(prompt_value "副标题" "通用运营后台")
+  echo ""
+
+  echo -e "${CYAN}🔌 端口设置${NC}"
+  local app_port nginx_port kong_http kong_https mcp_port
+  app_port=$(prompt_value "应用端口" "3001")
+  nginx_port=$(prompt_value "Nginx 端口" "8080")
+  kong_http=$(prompt_value "Kong HTTP 端口" "8001")
+  kong_https=$(prompt_value "Kong HTTPS 端口" "8444")
+  mcp_port=$(prompt_value "MCP Server 端口" "3002")
+  echo ""
+
+  echo -e "${CYAN}👤 Supabase Studio${NC}"
+  local dash_user dash_pass
+  dash_user=$(prompt_value "管理员用户名" "supabase")
+  dash_pass=$(openssl rand -base64 16 | tr -d '/+=' | head -c 16)
+  echo "  管理员密码（已自动生成）: ${dash_pass}"
+  echo ""
+
+  # ── B. 自动生成密钥 ──
+
+  echo -e "${CYAN}🔑 密钥已自动生成${NC}"
+  local pg_pass api_token meta_key secret_key_base s3_key_id s3_key_secret
+  pg_pass=$(openssl rand -base64 24 | tr -d '/+=' | head -c 32)
+  api_token=$(openssl rand -hex 32)
+  meta_key=$(openssl rand -hex 16)
+  secret_key_base=$(openssl rand -base64 48)
+  s3_key_id=$(openssl rand -hex 16)
+  s3_key_secret=$(openssl rand -hex 32)
+
+  # ── C. 固定 Demo JWT 密钥 ──
+
+  local jwt_secret="your-super-secret-jwt-token-with-at-least-32-characters-long"
+  local anon_key="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyAgCiAgICAicm9sZSI6ICJhbm9uIiwKICAgICJpc3MiOiAic3VwYWJhc2UtZGVtbyIsCiAgICAiaWF0IjogMTY0MTc2OTIwMCwKICAgICJleHAiOiAxNzk5NTM1NjAwCn0.dc_X5iR_VP_qT0zsiyj_I_OZ2T9FtRU2BBNWN8Bu4GE"
+  local service_role_key="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyAgCiAgICAicm9sZSI6ICJzZXJ2aWNlX3JvbGUiLAogICAgImlzcyI6ICJzdXBhYmFzZS1kZW1vIiwKICAgICJpYXQiOiAxNjQxNzY5MjAwLAogICAgImV4cCI6IDE3OTk1MzU2MDAKfQ.DaYlNEoUrrEn2Ig7tqibS-PHK5vgusbcbo7X36XVt4Q"
+
+  warn "使用 Supabase Demo JWT 密钥，生产环境请重新生成"
+  echo ""
+
+  # ── D. 派生值 ──
+
+  local site_url="http://localhost:${app_port}"
+  local api_external_url="http://localhost:${kong_http}"
+  local supabase_public_url="http://localhost:${kong_http}"
+
+  # ── 写入 .env ──
+
+  cat > .env <<ENVEOF
+############
+# Secrets
+############
+
+POSTGRES_PASSWORD=${pg_pass}
+JWT_SECRET=${jwt_secret}
+ANON_KEY=${anon_key}
+SERVICE_ROLE_KEY=${service_role_key}
+DASHBOARD_USERNAME=${dash_user}
+DASHBOARD_PASSWORD=${dash_pass}
+SECRET_KEY_BASE=${secret_key_base}
+PG_META_CRYPTO_KEY=${meta_key}
+
+############
+# Database - Internal PostgreSQL
+############
+
+POSTGRES_HOST=db
+POSTGRES_DB=postgres
+POSTGRES_PORT=5432
+
+############
+# API Proxy - Kong Configuration
+############
+
+KONG_HTTP_PORT=${kong_http}
+KONG_HTTPS_PORT=${kong_https}
+
+############
+# API - PostgREST Configuration
+############
+
+PGRST_DB_SCHEMAS=public,storage
+
+############
+# Auth - GoTrue Configuration
+############
+
+## General
+SITE_URL=${site_url}
+ADDITIONAL_REDIRECT_URLS=
+JWT_EXPIRY=3600
+DISABLE_SIGNUP=false
+API_EXTERNAL_URL=${api_external_url}
+
+## Mailer Config
+MAILER_URLPATHS_CONFIRMATION="/auth/v1/verify"
+MAILER_URLPATHS_INVITE="/auth/v1/verify"
+MAILER_URLPATHS_RECOVERY="/auth/v1/verify"
+MAILER_URLPATHS_EMAIL_CHANGE="/auth/v1/verify"
+
+## Email auth
+ENABLE_EMAIL_SIGNUP=true
+ENABLE_EMAIL_AUTOCONFIRM=true
+SMTP_ADMIN_EMAIL=admin@example.com
+SMTP_HOST=supabase-mail
+SMTP_PORT=2500
+SMTP_USER=fake_mail_user
+SMTP_PASS=fake_mail_password
+SMTP_SENDER_NAME=fake_sender
+ENABLE_ANONYMOUS_USERS=false
+
+## Phone auth
+ENABLE_PHONE_SIGNUP=false
+ENABLE_PHONE_AUTOCONFIRM=false
+
+############
+# Studio - Admin Dashboard
+############
+
+STUDIO_DEFAULT_ORGANIZATION=xiaohongshu-ops
+STUDIO_DEFAULT_PROJECT=xiaohongshu-ops
+
+# Public URL
+SUPABASE_PUBLIC_URL=${supabase_public_url}
+
+# Enable webp support
+IMGPROXY_ENABLE_WEBP_DETECTION=true
+
+############
+# Storage Configuration
+############
+
+STORAGE_TENANT_ID=stub
+GLOBAL_S3_BUCKET=stub
+REGION=stub
+S3_PROTOCOL_ACCESS_KEY_ID=${s3_key_id}
+S3_PROTOCOL_ACCESS_KEY_SECRET=${s3_key_secret}
+
+############
+# Application Auth Token
+############
+
+API_AUTH_TOKEN=${api_token}
+
+############
+# Application Branding
+############
+
+NEXT_PUBLIC_APP_NAME=${app_name}
+NEXT_PUBLIC_APP_SHORT_NAME=${app_short}
+NEXT_PUBLIC_APP_SUBTITLE=${app_subtitle}
+
+############
+# Application Ports (avoid conflicts with 5432, 8000, 3000)
+############
+
+APP_PORT=${app_port}
+NGINX_PORT=${nginx_port}
+MCP_PORT=${mcp_port}
+ENVEOF
+
+  log "配置文件已生成: .env"
 }
 
 # 显示访问地址
@@ -164,35 +338,17 @@ cmd_install() {
   check_deps
 
   # 2. 生成 .env
-  if [[ ! -f .env ]]; then
-    if [[ -f .env.example ]]; then
-      info "生成 .env 配置文件..."
-      cp .env.example .env
-
-      # 生成随机密钥
-      local pg_pass jwt_secret api_token meta_key
-      pg_pass=$(openssl rand -base64 24 | tr -d '/+=' | head -c 32)
-      jwt_secret=$(openssl rand -base64 32)
-      api_token=$(openssl rand -hex 32)
-      meta_key=$(openssl rand -hex 16)
-
-      # 替换默认值
-      sed -i.bak "s|your-super-secret-and-long-postgres-password|${pg_pass}|g" .env
-      sed -i.bak "s|your-super-secret-jwt-token-with-at-least-32-characters-long|${jwt_secret}|g" .env
-      sed -i.bak "s|your-api-auth-token-here|${api_token}|g" .env
-      sed -i.bak "s|your-encryption-key-32-chars-min|${meta_key}|g" .env
-      rm -f .env.bak
-
-      log "已生成 .env（所有密钥已随机生成）"
-      warn "默认使用 Supabase Demo 的 ANON_KEY 和 SERVICE_ROLE_KEY"
-      warn "生产环境请用你自己的 JWT_SECRET 重新生成 API Keys"
+  if [[ -f .env ]]; then
+    warn ".env 已存在"
+    read -rp "  重新配置? (y/N): " redo
+    if [[ "$redo" =~ ^[Yy]$ ]]; then
+      generate_env_interactive
     else
-      err "缺少 .env.example，请手动创建 .env 文件"
-      exit 1
+      info "保留现有配置"
+      check_env
     fi
   else
-    warn ".env 已存在，跳过生成"
-    check_env
+    generate_env_interactive
   fi
 
   # 3. 创建数据目录
@@ -288,31 +444,17 @@ cmd_init() {
   info "初始化 xiaohongshu-ops 环境..."
 
   # 生成 .env
-  if [[ ! -f .env ]]; then
-    if [[ -f .env.example ]]; then
-      info "生成 .env 配置文件..."
-      cp .env.example .env
-
-      # 生成随机密码和密钥
-      local pg_pass
-      pg_pass=$(openssl rand -base64 24 | tr -d '/+=' | head -c 32)
-      local jwt_secret
-      jwt_secret=$(openssl rand -base64 32)
-
-      # 替换默认值
-      sed -i.bak "s|your-super-secret-and-long-postgres-password|${pg_pass}|g" .env
-      sed -i.bak "s|your-super-secret-jwt-token-with-at-least-32-characters-long|${jwt_secret}|g" .env
-      rm -f .env.bak
-
-      log "已生成 .env（PostgreSQL 密码和 JWT 密钥已随机生成）"
-      warn "默认使用 Supabase Demo 的 ANON_KEY 和 SERVICE_ROLE_KEY"
-      warn "生产环境请用你自己的 JWT_SECRET 重新生成 API Keys"
+  if [[ -f .env ]]; then
+    warn ".env 已存在"
+    read -rp "  重新配置? (y/N): " redo
+    if [[ "$redo" =~ ^[Yy]$ ]]; then
+      generate_env_interactive
     else
-      err "缺少 .env.example，请手动创建 .env 文件"
-      exit 1
+      info "保留现有配置"
+      check_env
     fi
   else
-    warn ".env 已存在，跳过"
+    generate_env_interactive
   fi
 
   # 创建数据目录
@@ -591,6 +733,21 @@ cmd_health() {
 }
 
 # ============================================================
+# 交互式配置
+# ============================================================
+cmd_config() {
+  if [[ -f .env ]]; then
+    warn ".env 已存在"
+    read -rp "  重新配置将覆盖现有文件，继续? (y/N): " confirm
+    if [[ ! "$confirm" =~ ^[Yy]$ ]]; then
+      warn "已取消"
+      return
+    fi
+  fi
+  generate_env_interactive
+}
+
+# ============================================================
 # 帮助
 # ============================================================
 cmd_help() {
@@ -604,7 +761,8 @@ ${YELLOW}快速开始:${NC}
   uninstall   完整卸载
 
 ${YELLOW}基础命令:${NC}
-  init        初始化环境（生成 .env、创建目录）
+  init        初始化环境（交互式配置 .env、创建目录）
+  config      重新运行配置向导（生成 .env）
   start       启动所有服务
   stop        停止所有服务
   restart     重启所有服务
@@ -630,6 +788,7 @@ ${YELLOW}服务名:${NC}
 
 ${YELLOW}示例:${NC}
   ./manage.sh install         # 一键安装（首次）
+  ./manage.sh config          # 重新配置 .env
   ./manage.sh start           # 启动
   ./manage.sh logs app        # 查看应用日志
   ./manage.sh db backup       # 备份数据库
@@ -648,6 +807,7 @@ case "$cmd" in
   install)   cmd_install ;;
   uninstall) cmd_uninstall ;;
   init)    cmd_init ;;
+  config)  cmd_config ;;
   start)   cmd_start ;;
   stop)    cmd_stop ;;
   restart) cmd_restart ;;
