@@ -10,6 +10,7 @@ import { Timeline, Card, Button, Tag, Spin, Row, Col, Descriptions, Typography, 
 import { ArrowLeftOutlined, ClockCircleOutlined, FileTextOutlined } from '@ant-design/icons';
 import { AppLayout } from '@/components/app-layout';
 import { useIsMobile } from '@/components/hooks/use-breakpoint';
+import { PageHeader } from '@/components/mobile-page-header';
 
 const { Title, Text, Paragraph } = Typography;
 
@@ -62,8 +63,9 @@ export default function VersionsPage({ params }: { params: Promise<{ id: string 
         onClick={() => setSelectedVersion(version)}
         style={{
           cursor: 'pointer',
-          padding: 12,
-          borderRadius: 8,
+          padding: 14,
+          borderRadius: 12,
+          minHeight: 44,
           border: selectedVersion?.id === version.id ? '1px solid rgba(255, 36, 66, 0.3)' : '1px solid rgba(255, 255, 255, 0.06)',
           background: selectedVersion?.id === version.id ? 'rgba(255, 36, 66, 0.06)' : 'transparent',
           transition: 'all 0.2s',
@@ -109,7 +111,7 @@ export default function VersionsPage({ params }: { params: Promise<{ id: string 
               {selectedVersion.content}
             </pre>
           ) : (
-            <div style={{ textAlign: 'center', padding: '32px 0', color: '#7A6F8A' }}>（无内容）</div>
+            <div style={{ textAlign: 'center', padding: '32px 0', color: '#7A6F8A' }}>(无内容)</div>
           )}
         </Card>
       </div>
@@ -124,15 +126,15 @@ export default function VersionsPage({ params }: { params: Promise<{ id: string 
   return (
     <AppLayout>
       <div>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24, flexWrap: 'wrap', gap: 16 }}>
-          <div>
-            <Title level={3} style={{ marginBottom: 4 }}>版本历史</Title>
-            <Text type="secondary">共 {versions.length} 个版本</Text>
-          </div>
-          <Link href={`/articles/${id}`}>
-            <Button icon={<ArrowLeftOutlined />}>返回编辑</Button>
-          </Link>
-        </div>
+        <PageHeader
+          title="版本历史"
+          subtitle={`共 ${versions.length} 个版本`}
+          extra={
+            <Link href={`/articles/${id}`}>
+              <Button icon={<ArrowLeftOutlined />}>返回编辑</Button>
+            </Link>
+          }
+        />
 
         {isMobile ? (
           <div>

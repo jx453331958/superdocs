@@ -4,6 +4,7 @@ import { theme } from 'antd';
 const antdTheme: ThemeConfig = {
   algorithm: theme.darkAlgorithm,
   token: {
+    fontSize: 16,
     colorPrimary: '#FF2442',
     colorBgContainer: '#1a1625',
     colorBgLayout: '#0f0d15',

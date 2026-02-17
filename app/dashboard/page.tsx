@@ -17,10 +17,12 @@ import {
   FireOutlined,
 } from '@ant-design/icons';
 import { AppLayout } from '@/components/app-layout';
-import { StatusTag, getStatusLabel } from '@/components/status-tag';
+import { StatusTag } from '@/components/status-tag';
 import { useAppConfig } from '@/components/app-config-provider';
+import { PageHeader } from '@/components/mobile-page-header';
+import { useIsMobile } from '@/components/hooks/use-breakpoint';
 
-const { Title, Text } = Typography;
+const { Text } = Typography;
 
 interface DashboardStats {
   draft: number;
@@ -43,6 +45,7 @@ export default function DashboardPage() {
   const { token, ready } = useAuth();
   const { clearToken } = useAuthStore();
   const { message } = App.useApp();
+  const isMobile = useIsMobile();
   const [stats, setStats] = useState<DashboardStats>({
     draft: 0, pending_render: 0, pending_review: 0, published: 0, archived: 0,
   });
@@ -93,41 +96,76 @@ export default function DashboardPage() {
 
   const totalArticles = Object.values(stats).reduce((sum, count) => sum + count, 0);
 
+  const allStats = [
+    { key: 'total', label: '总文章', value: totalArticles, icon: <FireOutlined />, color: '#FF2442' },
+    ...statsConfig.map((item) => ({
+      key: item.key,
+      label: item.label,
+      value: stats[item.key as keyof DashboardStats],
+      icon: item.icon,
+      color: item.color,
+    })),
+  ];
+
   return (
     <AppLayout>
       <div>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24, flexWrap: 'wrap', gap: 16 }}>
-          <div>
-            <Title level={3} style={{ marginBottom: 4 }}>仪表盘</Title>
-            <Text type="secondary">{`欢迎回到${appConfig.name}后台`}</Text>
-          </div>
-          <Link href="/articles">
-            <Button type="primary" icon={<PlusOutlined />}>新建文章</Button>
-          </Link>
-        </div>
+        <PageHeader
+          title="仪表盘"
+          subtitle={`欢迎回到${appConfig.name}后台`}
+          extra={
+            <Link href="/articles">
+              <Button type="primary" icon={<PlusOutlined />}>新建文章</Button>
+            </Link>
+          }
+        />
 
-        <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
-          <Col xs={12} md={6}>
-            <Card>
-              <Statistic
-                title="总文章数"
-                value={totalArticles}
-                prefix={<FireOutlined style={{ color: '#FF2442' }} />}
-              />
-            </Card>
-          </Col>
-          {statsConfig.map((item) => (
-            <Col xs={12} md={6} key={item.key}>
+        {isMobile ? (
+          <div style={{
+            display: 'flex',
+            gap: 8,
+            overflowX: 'auto',
+            paddingBottom: 4,
+            marginBottom: 16,
+            WebkitOverflowScrolling: 'touch',
+            scrollbarWidth: 'none',
+            msOverflowStyle: 'none',
+          }}>
+            {allStats.map((item) => (
+              <Card key={item.key} size="small" style={{ minWidth: 100, flex: '0 0 auto' }}>
+                <Statistic
+                  title={<span style={{ fontSize: 12 }}>{item.label}</span>}
+                  value={item.value}
+                  prefix={<span style={{ color: item.color }}>{item.icon}</span>}
+                  valueStyle={{ fontSize: 20 }}
+                />
+              </Card>
+            ))}
+          </div>
+        ) : (
+          <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
+            <Col xs={12} md={6}>
               <Card>
                 <Statistic
-                  title={item.label}
-                  value={stats[item.key as keyof DashboardStats]}
-                  prefix={<span style={{ color: item.color }}>{item.icon}</span>}
+                  title="总文章数"
+                  value={totalArticles}
+                  prefix={<FireOutlined style={{ color: '#FF2442' }} />}
                 />
               </Card>
             </Col>
-          ))}
-        </Row>
+            {statsConfig.map((item) => (
+              <Col xs={12} md={6} key={item.key}>
+                <Card>
+                  <Statistic
+                    title={item.label}
+                    value={stats[item.key as keyof DashboardStats]}
+                    prefix={<span style={{ color: item.color }}>{item.icon}</span>}
+                  />
+                </Card>
+              </Col>
+            ))}
+          </Row>
+        )}
 
         <Card
           title="最近文章"

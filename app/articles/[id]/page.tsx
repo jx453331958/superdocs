@@ -228,6 +228,7 @@ export default function ArticleEditPage({ params }: { params: Promise<{ id: stri
               value={content}
               onChange={(val) => setContent(val || '')}
               height={350}
+              style={{ minHeight: 200 }}
               preview="edit"
               hideToolbar
             />
@@ -358,6 +359,7 @@ export default function ArticleEditPage({ params }: { params: Promise<{ id: stri
                   block
                   icon={config?.icon}
                   onClick={() => handleChangeStatus(status)}
+                  style={{ minHeight: 44 }}
                 >
                   转换到：{config?.label || status}
                 </Button>
@@ -369,7 +371,7 @@ export default function ArticleEditPage({ params }: { params: Promise<{ id: stri
 
       {article.status === 'pending_review' && (
         <Card title="发布到小红书">
-          <Button type="primary" danger block icon={<CheckCircleOutlined />} onClick={handlePublish}>
+          <Button type="primary" danger block icon={<CheckCircleOutlined />} onClick={handlePublish} style={{ minHeight: 44 }}>
             记录发布信息
           </Button>
         </Card>
@@ -399,27 +401,49 @@ export default function ArticleEditPage({ params }: { params: Promise<{ id: stri
           justifyContent: 'space-between',
           alignItems: 'center',
           marginBottom: 16,
-          flexWrap: 'wrap',
           gap: 8,
         }}>
           <Space>
             <Link href="/articles">
-              <Button icon={<ArrowLeftOutlined />} type="text" />
+              <Button icon={<ArrowLeftOutlined />} type="text" style={{ minWidth: 44, minHeight: 44 }} />
             </Link>
             <StatusTag status={article.status} />
             {!isMobile && <Text strong ellipsis style={{ maxWidth: 300 }}>{title}</Text>}
           </Space>
           <Space>
             <Link href={`/articles/${id}/versions`}>
-              <Button icon={<HistoryOutlined />} type="text">版本</Button>
+              <Button icon={<HistoryOutlined />} type="text" style={{ minWidth: 44, minHeight: 44 }}>
+                {!isMobile && '版本'}
+              </Button>
             </Link>
-            <Button type="primary" icon={<SaveOutlined />} onClick={handleSave} loading={saving}>
+            <Button
+              type="primary"
+              icon={<SaveOutlined />}
+              onClick={handleSave}
+              loading={saving}
+              style={{ minHeight: 44 }}
+            >
               保存
             </Button>
           </Space>
         </div>
 
-        <Tabs defaultActiveKey="edit" items={tabItems} />
+        {isMobile ? (
+          <div style={{
+            position: 'sticky',
+            top: 0,
+            zIndex: 10,
+            background: '#0f0d15',
+            marginLeft: -12,
+            marginRight: -12,
+            paddingLeft: 12,
+            paddingRight: 12,
+          }}>
+            <Tabs defaultActiveKey="edit" items={tabItems} />
+          </div>
+        ) : (
+          <Tabs defaultActiveKey="edit" items={tabItems} />
+        )}
       </div>
     </AppLayout>
   );

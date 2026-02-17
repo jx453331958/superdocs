@@ -1,6 +1,6 @@
 'use client';
 
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 import {
   DashboardOutlined,
@@ -24,8 +24,8 @@ export function MobileLayout({ children }: { children: React.ReactNode }) {
   )?.key || '/dashboard';
 
   return (
-    <div style={{ minHeight: '100vh', paddingBottom: 70 }}>
-      <main>{children}</main>
+    <div style={{ minHeight: '100dvh', paddingBottom: 'calc(60px + env(safe-area-inset-bottom, 0px))' }}>
+      <main style={{ padding: '0 12px' }}>{children}</main>
 
       <nav style={{
         position: 'fixed',
@@ -35,8 +35,9 @@ export function MobileLayout({ children }: { children: React.ReactNode }) {
         zIndex: 100,
         background: 'rgba(15, 13, 21, 0.95)',
         backdropFilter: 'blur(20px)',
+        WebkitBackdropFilter: 'blur(20px)',
         borderTop: '1px solid rgba(212, 165, 116, 0.15)',
-        padding: '6px 0',
+        padding: '6px 8px',
         paddingBottom: 'max(6px, env(safe-area-inset-bottom))',
         display: 'flex',
         justifyContent: 'space-around',
@@ -52,18 +53,35 @@ export function MobileLayout({ children }: { children: React.ReactNode }) {
                 display: 'flex',
                 flexDirection: 'column',
                 alignItems: 'center',
+                justifyContent: 'center',
                 gap: 2,
-                padding: '6px 12px',
+                minHeight: 44,
+                minWidth: 64,
+                padding: '4px 12px',
                 borderRadius: 12,
                 fontSize: 10,
-                fontWeight: 500,
+                fontWeight: isActive ? 600 : 400,
                 color: isActive ? '#FF2442' : '#7A6F8A',
+                background: isActive ? 'rgba(255, 36, 66, 0.1)' : 'transparent',
                 textDecoration: 'none',
                 WebkitTapHighlightColor: 'transparent',
-                transition: 'color 0.2s',
+                transition: 'all 0.2s',
+                position: 'relative',
               }}
             >
-              <span style={{ fontSize: 20 }}>{tab.icon}</span>
+              {isActive && (
+                <span style={{
+                  position: 'absolute',
+                  top: -6,
+                  left: '50%',
+                  transform: 'translateX(-50%)',
+                  width: 20,
+                  height: 2,
+                  borderRadius: 1,
+                  background: '#FF2442',
+                }} />
+              )}
+              <span style={{ fontSize: 22 }}>{tab.icon}</span>
               <span>{tab.label}</span>
             </Link>
           );

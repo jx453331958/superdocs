@@ -12,6 +12,7 @@ import type { ColumnsType } from 'antd/es/table';
 import { AppLayout } from '@/components/app-layout';
 import { StatusTag, getStatusLabel } from '@/components/status-tag';
 import { useIsMobile } from '@/components/hooks/use-breakpoint';
+import { PageHeader } from '@/components/mobile-page-header';
 
 const { Title, Text } = Typography;
 
@@ -139,34 +140,57 @@ export default function ArticlesPage() {
   return (
     <AppLayout>
       <div>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24, flexWrap: 'wrap', gap: 16 }}>
-          <div>
-            <Title level={3} style={{ marginBottom: 4 }}>文章管理</Title>
-            <Text type="secondary">管理你的所有内容</Text>
-          </div>
-          <Button type="primary" icon={<PlusOutlined />} onClick={() => setCreateModalOpen(true)}>
-            新建文章
-          </Button>
-        </div>
+        {isMobile ? (
+          <PageHeader title="文章管理" />
+        ) : (
+          <PageHeader
+            title="文章管理"
+            subtitle="管理你的所有内容"
+            extra={
+              <Button type="primary" icon={<PlusOutlined />} onClick={() => setCreateModalOpen(true)}>
+                新建文章
+              </Button>
+            }
+          />
+        )}
 
-        <Card style={{ marginBottom: 16 }}>
-          <Space wrap style={{ width: '100%' }}>
+        {isMobile ? (
+          <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
             <Input.Search
               placeholder="搜索标题或内容..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               onSearch={handleSearch}
-              style={{ width: isMobile ? '100%' : 300 }}
+              style={{ flex: 1 }}
               allowClear
             />
             <Select
               value={statusFilter}
               onChange={setStatusFilter}
               options={statusOptions}
-              style={{ width: 140 }}
+              style={{ width: 100 }}
             />
-          </Space>
-        </Card>
+          </div>
+        ) : (
+          <Card style={{ marginBottom: 16 }}>
+            <Space wrap style={{ width: '100%' }}>
+              <Input.Search
+                placeholder="搜索标题或内容..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                onSearch={handleSearch}
+                style={{ width: 300 }}
+                allowClear
+              />
+              <Select
+                value={statusFilter}
+                onChange={setStatusFilter}
+                options={statusOptions}
+                style={{ width: 140 }}
+              />
+            </Space>
+          </Card>
+        )}
 
         {isMobile ? (
           <List
@@ -175,18 +199,20 @@ export default function ArticlesPage() {
             locale={{ emptyText: <div style={{ padding: 40 }}><FileTextOutlined style={{ fontSize: 48, color: '#7A6F8A', display: 'block', marginBottom: 16 }} />暂无文章</div> }}
             renderItem={(article) => (
               <Link href={`/articles/${article.id}`} style={{ display: 'block', marginBottom: 8 }}>
-                <Card size="small" hoverable>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8, marginBottom: 4 }}>
-                    <Text strong style={{ flex: 1, color: '#F5F3F7' }} ellipsis>{article.title}</Text>
-                    <StatusTag status={article.status} />
-                  </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <Text type="secondary" style={{ fontSize: 12 }}>
-                      {article.tags.slice(0, 3).map((t) => `#${t}`).join(' ')}
-                    </Text>
-                    <Text type="secondary" style={{ fontSize: 12 }}>
-                      {new Date(article.created_at).toLocaleDateString('zh-CN')}
-                    </Text>
+                <Card size="small" hoverable style={{ borderRadius: 12 }}>
+                  <div style={{ padding: '2px 0' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8, marginBottom: 4 }}>
+                      <Text strong style={{ flex: 1, color: '#F5F3F7', fontSize: 15 }} ellipsis>{article.title}</Text>
+                      <StatusTag status={article.status} />
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <Text type="secondary" style={{ fontSize: 12 }}>
+                        {article.tags.slice(0, 3).map((t) => `#${t}`).join(' ')}
+                      </Text>
+                      <Text type="secondary" style={{ fontSize: 12 }}>
+                        {new Date(article.created_at).toLocaleDateString('zh-CN')}
+                      </Text>
+                    </div>
                   </div>
                 </Card>
               </Link>
@@ -203,6 +229,28 @@ export default function ArticlesPage() {
               locale={{ emptyText: '暂无文章' }}
             />
           </Card>
+        )}
+
+        {/* Mobile FAB */}
+        {isMobile && (
+          <Button
+            type="primary"
+            shape="circle"
+            icon={<PlusOutlined />}
+            onClick={() => setCreateModalOpen(true)}
+            style={{
+              position: 'fixed',
+              right: 20,
+              bottom: 'calc(80px + env(safe-area-inset-bottom, 0px))',
+              width: 52,
+              height: 52,
+              minWidth: 52,
+              minHeight: 52,
+              fontSize: 20,
+              zIndex: 99,
+              boxShadow: '0 4px 16px rgba(255, 36, 66, 0.4)',
+            }}
+          />
         )}
 
         <Modal

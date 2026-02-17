@@ -1,9 +1,16 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { AntdRegistry } from '@ant-design/nextjs-registry';
 import { AntdProvider } from './antd-provider';
 import { getAppConfig } from '@/lib/app-config';
 import { AppConfigProvider } from '@/components/app-config-provider';
 import "./globals.css";
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+  viewportFit: 'cover',
+};
 
 export function generateMetadata(): Metadata {
   const config = getAppConfig();
