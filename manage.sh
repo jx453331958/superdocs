@@ -266,8 +266,12 @@ generate_env_interactive() {
   echo ""
 
   echo -e "${CYAN}🌐 外部访问地址${NC}"
-  local external_host
-  external_host=$(prompt_value "服务域名或IP（外部访问用）" "localhost")
+  echo "  输入外部可访问的基础 URL（含协议）"
+  echo "  示例: https://example.com 或 http://192.168.1.5:8080"
+  local external_base_url
+  external_base_url=$(prompt_value "外部基础 URL" "http://localhost:${nginx_port}")
+  # 去除末尾斜杠
+  external_base_url="${external_base_url%/}"
   echo ""
 
   echo -e "${CYAN}👤 Supabase Studio${NC}"
@@ -302,17 +306,10 @@ generate_env_interactive() {
   # ── D. 派生值 ──
 
   local site_url api_external_url supabase_public_url mcp_external_url
-  if [[ "$external_host" == "localhost" ]]; then
-    site_url="http://localhost:${app_port}"
-    api_external_url="http://localhost:${kong_http}"
-    supabase_public_url="http://localhost:${kong_http}"
-    mcp_external_url="http://localhost:${mcp_port}"
-  else
-    site_url="http://${external_host}:${nginx_port}"
-    api_external_url="http://${external_host}:${nginx_port}"
-    supabase_public_url="http://${external_host}:${nginx_port}"
-    mcp_external_url="http://${external_host}:${nginx_port}"
-  fi
+  site_url="$external_base_url"
+  api_external_url="$external_base_url"
+  supabase_public_url="$external_base_url"
+  mcp_external_url="$external_base_url"
 
   # ── 写入 .env ──
 
@@ -770,6 +767,9 @@ cmd_update() {
   echo ""
   cmd_status
   show_access_info
+
+  # 8. 生成 skill 文件
+  generate_skill_file
   echo ""
   log "更新完成！"
 }
