@@ -484,17 +484,19 @@ cmd_install() {
 
   # 3. 创建数据目录
   mkdir -p volumes/db/data volumes/db/config volumes/storage
-  ensure_db_config
 
   # 4. 拉取镜像
   info "拉取镜像..."
   compose pull
 
-  # 5. 启动
+  # 5. 初始化数据库配置（需要先拉取镜像）
+  ensure_db_config
+
+  # 6. 启动
   info "启动所有服务..."
   compose up -d
 
-  # 6. 等待健康
+  # 7. 等待健康
   info "等待服务就绪（最长 120 秒）..."
   if wait_healthy 120; then
     log "安装完成！"
@@ -502,7 +504,7 @@ cmd_install() {
     warn "部分服务未就绪，请查看日志: ./manage.sh logs"
   fi
 
-  # 7. 显示状态和访问地址
+  # 8. 显示状态和访问地址
   echo ""
   cmd_status
   show_access_info
@@ -595,7 +597,6 @@ cmd_init() {
 
   # 创建数据目录
   mkdir -p volumes/db/data volumes/db/config volumes/storage
-  ensure_db_config
 
   log "初始化完成！"
   echo ""
@@ -608,10 +609,13 @@ cmd_init() {
 cmd_start() {
   check_deps
   [[ ! -f .env ]] && cmd_init
-  ensure_db_config
+  mkdir -p volumes/db/data volumes/db/config volumes/storage
 
   info "拉取镜像..."
   compose pull
+
+  # 初始化数据库配置（需要先拉取镜像）
+  ensure_db_config
 
   info "启动所有服务..."
   compose up -d
@@ -673,7 +677,7 @@ cmd_logs() {
 # ============================================================
 cmd_update() {
   check_deps
-  ensure_db_config
+  mkdir -p volumes/db/data volumes/db/config volumes/storage
 
   # 1. 备份数据库
   info "备份数据库..."
@@ -693,11 +697,14 @@ cmd_update() {
   info "拉取最新镜像..."
   compose pull
 
-  # 3. 重建服务
+  # 3. 初始化数据库配置（需要先拉取镜像）
+  ensure_db_config
+
+  # 4. 重建服务
   info "重启服务..."
   compose up -d
 
-  # 4. 等待健康
+  # 5. 等待健康
   info "等待服务就绪..."
   if wait_healthy 120; then
     log "服务已就绪"
@@ -705,7 +712,7 @@ cmd_update() {
     warn "部分服务未就绪，请查看日志: ./manage.sh logs"
   fi
 
-  # 5. 数据库迁移
+  # 6. 数据库迁移
   info "检查数据库迁移..."
   local has_migrations=false
   for f in supabase/migrations/*.sql; do
@@ -722,7 +729,7 @@ cmd_update() {
     info "无待执行的迁移"
   fi
 
-  # 6. 显示状态
+  # 7. 显示状态
   echo ""
   cmd_status
   show_access_info
