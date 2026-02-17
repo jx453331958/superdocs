@@ -608,6 +608,7 @@ cmd_init() {
 cmd_start() {
   check_deps
   [[ ! -f .env ]] && cmd_init
+  ensure_db_config
 
   info "拉取镜像..."
   compose pull
@@ -672,6 +673,7 @@ cmd_logs() {
 # ============================================================
 cmd_update() {
   check_deps
+  ensure_db_config
 
   # 1. 备份数据库
   info "备份数据库..."
