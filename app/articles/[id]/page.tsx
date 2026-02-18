@@ -127,8 +127,10 @@ export default function ArticleEditPage({ params }: { params: Promise<{ id: stri
 
   const handleDownloadImage = async (url: string) => {
     const filename = url.split('/').pop() || 'image.png';
-    // iOS: 用 Web Share API 让用户存入相册
-    if (navigator.share && navigator.canShare) {
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+
+    // iOS: 优先用 Web Share API 让用户存入相册
+    if (isIOS && navigator.share && navigator.canShare) {
       try {
         const res = await fetch(`${url}?download=1`);
         const blob = await res.blob();
@@ -142,6 +144,14 @@ export default function ArticleEditPage({ params }: { params: Promise<{ id: stri
         if (e?.name === 'AbortError') return;
       }
     }
+
+    // iOS fallback: 新窗口打开图片，长按可保存到相册
+    if (isIOS) {
+      window.open(url, '_blank');
+      message.info('长按图片可保存到相册');
+      return;
+    }
+
     // 其他平台: <a download> 触发浏览器下载
     const a = document.createElement('a');
     a.href = `${url}?download=1`;
