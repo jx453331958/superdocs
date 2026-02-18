@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { Image } from 'antd';
 
 interface XhsMarkdownPreviewProps {
@@ -14,6 +14,7 @@ interface XhsMarkdownPreviewProps {
  */
 export function XhsMarkdownPreview({ source, images = [] }: XhsMarkdownPreviewProps) {
   const rendered = useMemo(() => parseMarkdown(source), [source]);
+  const [previewIndex, setPreviewIndex] = useState<number | null>(null);
 
   return (
     <div className="xhs-preview">
@@ -33,15 +34,23 @@ export function XhsMarkdownPreview({ source, images = [] }: XhsMarkdownPreviewPr
 
       {/* 图片轮播区（如果有图片） */}
       {images.length > 0 && (
-        <Image.PreviewGroup>
+        <>
           <div className="xhs-preview-images">
-            {images.map((img) => (
-              <div key={img.id} className="xhs-preview-image-item">
-                <Image src={img.url} alt="" loading="lazy" />
+            {images.map((img, idx) => (
+              <div key={img.id} className="xhs-preview-image-item" onClick={() => setPreviewIndex(idx)}>
+                <img src={img.url} alt="" loading="lazy" />
               </div>
             ))}
           </div>
-        </Image.PreviewGroup>
+          <Image.PreviewGroup
+            preview={{
+              visible: previewIndex !== null,
+              current: previewIndex ?? 0,
+              onVisibleChange: (v) => { if (!v) setPreviewIndex(null); },
+            }}
+            items={images.map((img) => img.url)}
+          />
+        </>
       )}
 
       {/* 正文内容 */}
