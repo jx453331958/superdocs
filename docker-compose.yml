@@ -3,8 +3,6 @@
 # Added: app (Next.js) and nginx
 # All HTTP traffic goes through nginx (single entry point); only db (TCP) is exposed separately
 
-name: xiaohongshu-ops
-
 services:
   # Studio - Admin Dashboard
   studio:
