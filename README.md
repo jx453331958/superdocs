@@ -126,12 +126,7 @@ xiaohongshu-ops/
 
 所有 API 请求需要在 Header 中包含：
 ```
-Authorization: Bearer <ANON_KEY>
-```
-
-服务端 API 使用：
-```
-Authorization: Bearer <SERVICE_ROLE_KEY>
+Authorization: Bearer <API_AUTH_TOKEN>
 ```
 
 ### 主要端点
@@ -152,11 +147,12 @@ Authorization: Bearer <SERVICE_ROLE_KEY>
 
 ```
 supabase/migrations/
-├── 00_schema.sql          # 核心表结构
-├── 01_auth.sql            # 认证配置
-├── 02_storage.sql         # 存储桶配置
-└── 03_rls.sql             # Row Level Security
+├── 001_initial_schema.sql        # 核心表结构（articles, versions, images, stats）
+├── 002_enable_rls.sql            # Row Level Security
+└── 003_create_storage_bucket.sql # 创建图片存储桶
 ```
+
+执行迁移：`./manage.sh db migrate`（`./manage.sh update` 会自动执行）
 
 ## 环境变量说明
 
@@ -223,7 +219,7 @@ npm run build
 
 ### 4. 无法上传图片
 
-确保 Storage API 运行正常：
+`article-images` 存储桶会在首次上传时自动创建。如仍有问题，确保 Storage API 运行正常：
 ```bash
 docker compose logs storage
 ```
