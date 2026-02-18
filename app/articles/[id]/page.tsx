@@ -453,7 +453,7 @@ export default function ArticleEditPage({ params }: { params: Promise<{ id: stri
 
   return (
     <AppLayout>
-      <div>
+      <div style={{ paddingBottom: isMobile ? 24 : 0 }}>
         {/* 顶部操作栏 */}
         <div style={{
           display: 'flex',
