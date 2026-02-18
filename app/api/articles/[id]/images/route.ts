@@ -3,6 +3,23 @@ import { getServiceSupabase } from '@/lib/supabase';
 import { withAuth, errorResponse, successResponse } from '@/lib/auth';
 import { ArticleImage } from '@/types/article';
 
+const BUCKET_NAME = 'article-images';
+
+let bucketEnsured = false;
+
+async function ensureBucket(supabase: ReturnType<typeof getServiceSupabase>) {
+  if (bucketEnsured) return;
+  const { error } = await supabase.storage.createBucket(BUCKET_NAME, {
+    public: true,
+    fileSizeLimit: 10485760, // 10MB
+    allowedMimeTypes: ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml'],
+  });
+  if (error && !error.message.includes('already exists')) {
+    throw error;
+  }
+  bucketEnsured = true;
+}
+
 interface RouteContext {
   params: Promise<{ id: string }>;
 }
@@ -64,13 +81,16 @@ export const POST = withAuth(async (req: NextRequest, context: RouteContext) => 
       return errorResponse('请上传文件');
     }
 
+    // 确保 bucket 存在
+    await ensureBucket(supabase);
+
     // 生成唯一文件名
     const fileExt = file.name.split('.').pop();
     const fileName = `${id}/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
 
     // 上传到 Supabase Storage
     const { data: uploadData, error: uploadError } = await supabase.storage
-      .from('article-images')
+      .from(BUCKET_NAME)
       .upload(fileName, file, {
         contentType: file.type,
         upsert: false,
@@ -80,7 +100,7 @@ export const POST = withAuth(async (req: NextRequest, context: RouteContext) => 
 
     // 获取公开 URL
     const { data: urlData } = supabase.storage
-      .from('article-images')
+      .from(BUCKET_NAME)
       .getPublicUrl(fileName);
 
     // 保存到数据库
@@ -137,7 +157,7 @@ export const DELETE = withAuth(async (req: NextRequest, context: RouteContext) =
     // 从 Storage 删除
     if (image.storage_path) {
       const { error: storageError } = await supabase.storage
-        .from('article-images')
+        .from(BUCKET_NAME)
         .remove([image.storage_path]);
 
       if (storageError) {

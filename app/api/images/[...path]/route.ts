@@ -13,7 +13,6 @@ export async function GET(
   
   const supabase = getServiceSupabase();
   
-  // 尝试从 article-images bucket 获取
   const { data, error } = await supabase.storage
     .from('article-images')
     .download(fullPath);
