@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useRef, useCallback } from 'react';
 import { Image } from 'antd';
 
 interface XhsMarkdownPreviewProps {
@@ -15,6 +15,21 @@ interface XhsMarkdownPreviewProps {
 export function XhsMarkdownPreview({ source, images = [] }: XhsMarkdownPreviewProps) {
   const rendered = useMemo(() => parseMarkdown(source), [source]);
   const [previewIndex, setPreviewIndex] = useState<number | null>(null);
+  const [currentSlide, setCurrentSlide] = useState(0);
+  const carouselRef = useRef<HTMLDivElement>(null);
+
+  const handleScroll = useCallback(() => {
+    const el = carouselRef.current;
+    if (!el || !el.clientWidth) return;
+    const index = Math.round(el.scrollLeft / el.clientWidth);
+    setCurrentSlide(Math.min(index, images.length - 1));
+  }, [images.length]);
+
+  const scrollToSlide = useCallback((index: number) => {
+    const el = carouselRef.current;
+    if (!el) return;
+    el.scrollTo({ left: index * el.clientWidth, behavior: 'smooth' });
+  }, []);
 
   return (
     <div className="xhs-preview">
@@ -35,13 +50,85 @@ export function XhsMarkdownPreview({ source, images = [] }: XhsMarkdownPreviewPr
       {/* 图片轮播区（如果有图片） */}
       {images.length > 0 && (
         <>
-          <div className="xhs-preview-images">
-            {images.map((img, idx) => (
-              <div key={img.id} className="xhs-preview-image-item" onClick={() => setPreviewIndex(idx)}>
-                <img src={img.url} alt="" loading="lazy" />
+          <div style={{ position: 'relative' }}>
+            <div
+              ref={carouselRef}
+              className="xhs-preview-images"
+              onScroll={handleScroll}
+            >
+              {images.map((img, idx) => (
+                <div key={img.id} className="xhs-preview-image-item" onClick={() => setPreviewIndex(idx)}>
+                  <img src={img.url} alt="" loading="lazy" />
+                </div>
+              ))}
+            </div>
+            {/* 页码指示器 */}
+            {images.length > 1 && (
+              <div style={{
+                position: 'absolute',
+                bottom: 10,
+                right: 12,
+                background: 'rgba(0,0,0,0.55)',
+                borderRadius: 10,
+                padding: '2px 8px',
+                fontSize: 12,
+                color: '#fff',
+                fontVariantNumeric: 'tabular-nums',
+              }}>
+                {currentSlide + 1}/{images.length}
               </div>
-            ))}
+            )}
           </div>
+          {/* 圆点指示器 + 缩略图条 */}
+          {images.length > 1 && (
+            <div style={{ padding: '8px 12px 4px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {/* 圆点 */}
+              <div style={{ display: 'flex', justifyContent: 'center', gap: 5 }}>
+                {images.map((_, idx) => (
+                  <div
+                    key={idx}
+                    onClick={() => scrollToSlide(idx)}
+                    style={{
+                      width: idx === currentSlide ? 16 : 6,
+                      height: 6,
+                      borderRadius: 3,
+                      background: idx === currentSlide ? '#FF2442' : 'rgba(255,255,255,0.25)',
+                      transition: 'all 0.3s',
+                      cursor: 'pointer',
+                    }}
+                  />
+                ))}
+              </div>
+              {/* 缩略图条 */}
+              <div style={{
+                display: 'flex',
+                gap: 6,
+                overflowX: 'auto',
+                scrollbarWidth: 'none',
+                paddingBottom: 4,
+              }}>
+                {images.map((img, idx) => (
+                  <div
+                    key={img.id}
+                    onClick={() => scrollToSlide(idx)}
+                    style={{
+                      flex: '0 0 48px',
+                      width: 48,
+                      height: 48,
+                      borderRadius: 6,
+                      overflow: 'hidden',
+                      border: idx === currentSlide ? '2px solid #FF2442' : '2px solid transparent',
+                      opacity: idx === currentSlide ? 1 : 0.5,
+                      transition: 'all 0.2s',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    <img src={img.url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} loading="lazy" />
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
           <Image.PreviewGroup
             preview={{
               visible: previewIndex !== null,
