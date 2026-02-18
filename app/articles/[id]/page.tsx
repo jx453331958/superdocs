@@ -13,6 +13,7 @@ import {
   ArrowLeftOutlined,
   HistoryOutlined,
   DeleteOutlined,
+  DownloadOutlined,
   CheckCircleOutlined,
   ClockCircleOutlined,
   FileTextOutlined,
@@ -122,6 +123,25 @@ export default function ArticleEditPage({ params }: { params: Promise<{ id: stri
       setUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = '';
     }
+  };
+
+  const handleDownloadImage = (url: string) => {
+    const a = document.createElement('a');
+    a.href = `${url}?download=1`;
+    a.download = '';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  };
+
+  const handleDownloadAll = async () => {
+    for (let i = 0; i < images.length; i++) {
+      handleDownloadImage(images[i].url);
+      if (i < images.length - 1) {
+        await new Promise(r => setTimeout(r, 300));
+      }
+    }
+    message.success('全部下载已触发');
   };
 
   const handleDeleteImage = async (imageId: string) => {
@@ -287,6 +307,14 @@ export default function ArticleEditPage({ params }: { params: Promise<{ id: stri
           >
             选择图片
           </Button>
+          {images.length > 0 && (
+            <Button
+              icon={<DownloadOutlined />}
+              onClick={handleDownloadAll}
+            >
+              下载全部
+            </Button>
+          )}
           {uploading && <Text type="secondary">上传中...</Text>}
         </Space>
       </Card>
@@ -319,6 +347,10 @@ export default function ArticleEditPage({ params }: { params: Promise<{ id: stri
               }
               size="small"
               actions={[
+                <DownloadOutlined
+                  key="download"
+                  onClick={() => handleDownloadImage(image.url)}
+                />,
                 <DeleteOutlined
                   key="delete"
                   style={{ color: '#DC2626' }}

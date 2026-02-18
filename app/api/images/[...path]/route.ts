@@ -25,5 +25,11 @@ export async function GET(
   headers.set('Content-Type', data.type || 'image/png');
   headers.set('Cache-Control', 'public, max-age=31536000, immutable');
 
+  const download = req.nextUrl.searchParams.get('download');
+  if (download === '1') {
+    const filename = path[path.length - 1] || 'image';
+    headers.set('Content-Disposition', `attachment; filename="${filename}"`);
+  }
+
   return new NextResponse(data, { headers });
 }
