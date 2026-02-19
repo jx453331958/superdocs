@@ -7,7 +7,7 @@ import dynamic from 'next/dynamic';
 import { useAuth } from '@/lib/use-auth';
 import { apiRequest, uploadFile } from '@/lib/api-client';
 import { Article, ArticleImage, ArticleStatus } from '@/types/article';
-import { Button, Input, Card, Tabs, Space, Modal, Upload, Spin, Typography, App, Image } from 'antd';
+import { Button, Input, Card, Tabs, Space, Modal, Upload, Spin, Typography, App } from 'antd';
 import {
   SaveOutlined,
   ArrowLeftOutlined,
@@ -24,6 +24,7 @@ import {
 import type { UploadFile } from 'antd';
 import { AppLayout } from '@/components/app-layout';
 import { XhsMarkdownPreview } from '@/components/xhs-markdown-preview';
+import { ImagePreviewModal } from '@/components/image-preview-modal';
 import { StatusTag, getStatusLabel } from '@/components/status-tag';
 import { useIsMobile } from '@/components/hooks/use-breakpoint';
 
@@ -55,6 +56,7 @@ export default function ArticleEditPage({ params }: { params: Promise<{ id: stri
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [imagePreviewIndex, setImagePreviewIndex] = useState<number | null>(null);
   const [htmlModalOpen, setHtmlModalOpen] = useState(false);
   const [htmlModalImage, setHtmlModalImage] = useState<ArticleImage | null>(null);
   const [htmlContent, setHtmlContent] = useState('');
@@ -456,12 +458,16 @@ export default function ArticleEditPage({ params }: { params: Promise<{ id: stri
           gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(4, 1fr)',
           gap: 16,
         }}>
-          {images.map((image) => (
+          {images.map((image, idx) => (
             <Card
               key={image.id}
               cover={
-                <div style={{ aspectRatio: '1', overflow: 'hidden', background: '#252032' }}>
-                  <Image
+                <div
+                  style={{ aspectRatio: '1', overflow: 'hidden', background: '#252032', cursor: 'pointer' }}
+                  onClick={() => setImagePreviewIndex(idx)}
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
                     src={image.url}
                     alt="文章图片"
                     style={{ width: '100%', height: '100%', objectFit: 'cover' }}
@@ -495,6 +501,12 @@ export default function ArticleEditPage({ params }: { params: Promise<{ id: stri
           ))}
         </div>
       )}
+      <ImagePreviewModal
+        images={images.map((img) => img.url)}
+        visible={imagePreviewIndex !== null}
+        initialIndex={imagePreviewIndex ?? 0}
+        onClose={() => setImagePreviewIndex(null)}
+      />
     </div>
   );
 

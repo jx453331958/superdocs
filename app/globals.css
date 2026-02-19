@@ -33,6 +33,11 @@ body {
   margin: 0;
 }
 
+/* 图片预览滚动容器隐藏滚动条 */
+.image-preview-scroll::-webkit-scrollbar {
+  display: none;
+}
+
 /* 噪点纹理 */
 body::before {
   content: '';

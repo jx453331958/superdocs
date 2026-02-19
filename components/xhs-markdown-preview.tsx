@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo, useState, useRef, useCallback } from 'react';
-import { Image } from 'antd';
+import { ImagePreviewModal } from '@/components/image-preview-modal';
 
 interface XhsMarkdownPreviewProps {
   source: string;
@@ -129,13 +129,11 @@ export function XhsMarkdownPreview({ source, images = [] }: XhsMarkdownPreviewPr
               </div>
             </div>
           )}
-          <Image.PreviewGroup
-            preview={{
-              visible: previewIndex !== null,
-              current: previewIndex ?? 0,
-              onVisibleChange: (v) => { if (!v) setPreviewIndex(null); },
-            }}
-            items={images.map((img) => img.url)}
+          <ImagePreviewModal
+            images={images.map((img) => img.url)}
+            visible={previewIndex !== null}
+            initialIndex={previewIndex ?? 0}
+            onClose={() => setPreviewIndex(null)}
           />
         </>
       )}
