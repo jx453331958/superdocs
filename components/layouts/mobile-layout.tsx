@@ -5,6 +5,7 @@ import Link from 'next/link';
 import {
   DashboardOutlined,
   FileTextOutlined,
+  SnippetsOutlined,
   CalendarOutlined,
   SettingOutlined,
 } from '@ant-design/icons';
@@ -12,6 +13,7 @@ import {
 const tabs = [
   { key: '/dashboard', icon: <DashboardOutlined />, label: '仪表盘' },
   { key: '/articles', icon: <FileTextOutlined />, label: '文章' },
+  { key: '/templates', icon: <SnippetsOutlined />, label: '模板' },
   { key: '/calendar', icon: <CalendarOutlined />, label: '日历' },
   { key: '/settings', icon: <SettingOutlined />, label: '设置' },
 ];

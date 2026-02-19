@@ -7,6 +7,7 @@ import { Layout, Menu } from 'antd';
 import {
   DashboardOutlined,
   FileTextOutlined,
+  SnippetsOutlined,
   CalendarOutlined,
   SettingOutlined,
   LogoutOutlined,
@@ -21,6 +22,7 @@ const { Sider, Header, Content } = Layout;
 const navItems = [
   { key: '/dashboard', icon: <DashboardOutlined />, label: <Link href="/dashboard">仪表盘</Link> },
   { key: '/articles', icon: <FileTextOutlined />, label: <Link href="/articles">文章管理</Link> },
+  { key: '/templates', icon: <SnippetsOutlined />, label: <Link href="/templates">模板库</Link> },
   { key: '/calendar', icon: <CalendarOutlined />, label: <Link href="/calendar">内容日历</Link> },
   { key: '/settings', icon: <SettingOutlined />, label: <Link href="/settings">设置</Link> },
 ];
